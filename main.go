@@ -4,6 +4,7 @@ package main
 // #include "lib_bridge.h"
 import "C"
 import (
+	"fmt"
 	"net/http"
 	"unsafe"
 
@@ -91,13 +92,29 @@ var albums = []album{
 	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
 }
 
+type attr struct {
+	PK  string `json:"pk"`
+	Att string `json:"att"`
+}
+
 func main() {
 	router := gin.Default()
+	router.POST("/register", register)
 	router.GET("/albums", getAlbums)
 	router.GET("/albums/:id", getAlbumByID)
 	router.POST("/albums", postAlbums)
 
 	router.Run("localhost:8080")
+}
+
+func register(c *gin.Context) {
+	var user attr
+	if err := c.BindJSON(&user); err != nil {
+		return
+	}
+	fmt.Println("User %v", user)
+
+	c.IndentedJSON(http.StatusOK, user.PK)
 }
 
 // getAlbums responds with the list of all albums as JSON.
