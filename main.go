@@ -8,8 +8,23 @@ import (
 	"net/http"
 	"unsafe"
 
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"math/big"
+
+	"math/rand/v2"
+
 	"github.com/gin-gonic/gin"
 )
+
+type PrivateKey struct {
+	PublicKey
+	D *big.Int
+}
+type PublicKey struct {
+	elliptic.Curve
+	X, Y *big.Int
+}
 
 type ABE struct {
 	ptr unsafe.Pointer
@@ -48,6 +63,28 @@ func (abe ABE) decrypt(key string, ct string) string {
 
 }
 
+func (abe ABE) exportMSK() string {
+
+	return C.GoString(C.LIB_exportMPK(abe.ptr))
+}
+
+func (abe ABE) exportMPK() string {
+
+	return C.GoString(C.LIB_exportMPK(abe.ptr))
+}
+
+func (abe ABE) importMSK(key string) {
+
+	lkey := C.CString(key)
+	C.LIB_importMSK(abe.ptr, lkey)
+}
+
+func (abe ABE) importMPK(key string) {
+
+	lkey := C.CString(key)
+	C.LIB_importMPK(abe.ptr, lkey)
+}
+
 // d, err := os.ReadFile("./sample.json")
 // if err != nil {
 // 	panic(err)
@@ -77,34 +114,53 @@ func main() {
 }
 */
 
-// album represents data about a record album.
-type album struct {
-	ID     string  `json:"id"`
-	Title  string  `json:"title"`
-	Artist string  `json:"artist"`
-	Price  float64 `json:"price"`
-}
-
-// albums slice to seed record album data.
-var albums = []album{
-	{ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
-	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
-	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
-}
-
 type attr struct {
 	PK  string `json:"pk"`
 	Att string `json:"att"`
 }
 
+type MKey struct {
+	MSK *ecdsa.PrivateKey `json:"msk"`
+	MPK ecdsa.PublicKey   `json:"mpk"`
+}
+
+var gabe ABE
+var msk, mpk string
+
+func newABE() *ABE {
+
+	abe := NewABE("CP-ABE")
+	abe.generateParams()
+
+	return &abe
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func RandStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.IntN(len(letterBytes))]
+	}
+	return string(b)
+}
+
 func main() {
+
+	gabe = NewABE("CP-ABE")
+	gabe.generateParams()
+	gabe.genkey("qwe", "asd")
+	fmt.Println("Genkey main OK")
+	// msk = gabe.exportMSK()
+	// mpk = gabe.exportMPK()
+	// gabe.genkey("helo", "key")
+	// fmt.Println("genkey ok")
+
 	router := gin.Default()
 	router.POST("/register", register)
-	router.GET("/albums", getAlbums)
-	router.GET("/albums/:id", getAlbumByID)
-	router.POST("/albums", postAlbums)
 
 	router.Run("localhost:8080")
+
 }
 
 func register(c *gin.Context) {
@@ -112,43 +168,20 @@ func register(c *gin.Context) {
 	if err := c.BindJSON(&user); err != nil {
 		return
 	}
-	fmt.Println("User %v", user)
+	fmt.Println("User:", user)
 
-	c.IndentedJSON(http.StatusOK, user.PK)
-}
+	key := RandStringBytes(8)
 
-// getAlbums responds with the list of all albums as JSON.
-func getAlbums(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, albums)
-}
+	// abe := NewABE("CP-ABE")
+	// abe.importMPK(mpk)
+	// abe.importMSK(msk)
 
-// postAlbums adds an album from JSON received in the request body.
-func postAlbums(c *gin.Context) {
-	var newAlbum album
+	//gabe.genkey("abc", "key1")
 
-	// Call BindJSON to bind the received JSON to
-	// newAlbum.
-	if err := c.BindJSON(&newAlbum); err != nil {
-		return
-	}
+	// fmt.Println("ABEKey: ", key)
+	// fmt.Println("User att: ", user.Att)
 
-	// Add the new album to the slice.
-	albums = append(albums, newAlbum)
-	c.IndentedJSON(http.StatusCreated, newAlbum)
-}
+	gabe.genkey("abc", "key1")
 
-// getAlbumByID locates the album whose ID value matches the id
-// parameter sent by the client, then returns that album as a response.
-func getAlbumByID(c *gin.Context) {
-	id := c.Param("id")
-
-	// Loop through the list of albums, looking for
-	// an album whose ID value matches the parameter.
-	for _, a := range albums {
-		if a.ID == id {
-			c.IndentedJSON(http.StatusOK, a)
-			return
-		}
-	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
+	c.IndentedJSON(http.StatusOK, key)
 }
