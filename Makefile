@@ -8,3 +8,4 @@ all: liblibrary.so
 
 liblibrary.so: lib_bridge.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -fPIC -shared -o liblibrary.so lib_bridge.cpp $(LIBS)
+

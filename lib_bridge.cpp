@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "lib_bridge.h"
-#include "openabe/openabe.h"
+#include <openabe/openabe.h>
 #include <openabe/zsymcrypto.h>
 
 using namespace std;
@@ -13,16 +13,22 @@ using namespace oabe::crypto;
 
 void* LIB_NewABE(char* name) {
 
-    // std::cout << "[c++ bridge] LIB_NewABE" << name << ")" << std::endl;
-    
-    InitializeOpenABE();
-
    auto cpabe = new OpenABECryptoContext(name);
 
 //   std::cout << "[c++ bridge] LIB_NewABE(" << name << ") will return pointer "
             // << cpabe << std::endl;
 
   return cpabe;
+}
+
+void* LIB_InitializeOpenABE() {
+    InitializeOpenABE();
+    return 0;
+}
+
+void* LIB_ShutdownOpenABE() {
+    ShutdownOpenABE();
+    return 0;
 }
 
 // Utility function local to the bridge's implementation

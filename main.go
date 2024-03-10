@@ -36,6 +36,14 @@ func NewABE(abename string) ABE {
 	return abe
 }
 
+func InitializeOpenABE() {
+	C.LIB_InitializeOpenABE()
+}
+
+func ShutdownABE() {
+	C.LIB_ShutdownOpenABE()
+}
+
 func (abe ABE) generateParams() {
 	C.LIB_generateParams(abe.ptr)
 }
@@ -65,7 +73,7 @@ func (abe ABE) decrypt(key string, ct string) string {
 
 func (abe ABE) exportMSK() string {
 
-	return C.GoString(C.LIB_exportMPK(abe.ptr))
+	return C.GoString(C.LIB_exportMSK(abe.ptr))
 }
 
 func (abe ABE) exportMPK() string {
@@ -127,14 +135,6 @@ type MKey struct {
 var gabe ABE
 var msk, mpk string
 
-func newABE() *ABE {
-
-	abe := NewABE("CP-ABE")
-	abe.generateParams()
-
-	return &abe
-}
-
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func RandStringBytes(n int) string {
@@ -147,14 +147,15 @@ func RandStringBytes(n int) string {
 
 func main() {
 
+	InitializeOpenABE()
+
 	gabe = NewABE("CP-ABE")
 	gabe.generateParams()
-	gabe.genkey("qwe", "asd")
-	fmt.Println("Genkey main OK")
-	// msk = gabe.exportMSK()
-	// mpk = gabe.exportMPK()
-	// gabe.genkey("helo", "key")
-	// fmt.Println("genkey ok")
+
+	msk = gabe.exportMSK()
+	mpk = gabe.exportMPK()
+
+	fmt.Println("mpk:", mpk, "  msk:", msk)
 
 	router := gin.Default()
 	router.POST("/register", register)
@@ -172,16 +173,17 @@ func register(c *gin.Context) {
 
 	key := RandStringBytes(8)
 
-	// abe := NewABE("CP-ABE")
-	// abe.importMPK(mpk)
-	// abe.importMSK(msk)
+	// abe1 := NewABE("CP-ABE")
+	// abe1.importMPK(msk)
+	// // abe.importMSK(msk)
 
-	//gabe.genkey("abc", "key1")
+	// abe1.genkey("abc", "key1")
 
-	// fmt.Println("ABEKey: ", key)
+	fmt.Println("ABEKey: ", key)
+
 	// fmt.Println("User att: ", user.Att)
 
-	gabe.genkey("abc", "key1")
+	gabe.genkey(user.Att, key)
 
 	c.IndentedJSON(http.StatusOK, key)
 }
