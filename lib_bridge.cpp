@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "lib_bridge.h"
-#include <openabe/openabe.h>
+#include "openabe/openabe.h"
 #include <openabe/zsymcrypto.h>
 
 using namespace std;
@@ -107,12 +107,9 @@ char* LIB_exportUserKey(void* abe, char* key) {
     return kc;
 }
 
-char* LIB_importUserKey(void* abe,char* key) {
-    std::string k;
-    AsAbe(abe)->importUserKey(k, std::string((char*)key));
-    
-    char *skc = new char[k.size() + 1];
-    std::strcpy(skc, k.c_str());
+int LIB_importUserKey(void* abe, char* index, char* key) {
 
-    return skc;
+    AsAbe(abe)->importUserKey(std::string((char*)index), std::string((char*)key));
+
+    return 0;
 }

@@ -8,27 +8,31 @@ import (
 	"net/http"
 	"unsafe"
 
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"math/big"
-
 	"math/rand/v2"
 
 	"github.com/gin-gonic/gin"
 )
 
-type PrivateKey struct {
-	PublicKey
-	D *big.Int
-}
-type PublicKey struct {
-	elliptic.Curve
-	X, Y *big.Int
-}
-
 type ABE struct {
 	ptr unsafe.Pointer
 }
+
+type Attr struct {
+	PK  string `json:"pk"`
+	Att string `json:"att"`
+}
+
+type Res struct {
+	Idx  string `json:"idx"`
+	Ekey string `json:"ekey"`
+}
+
+var msk, mpk string
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+var messages = make(chan Attr)
+var keys = make(chan string)
 
 func NewABE(abename string) ABE {
 	var abe ABE
@@ -44,25 +48,25 @@ func ShutdownABE() {
 	C.LIB_ShutdownOpenABE()
 }
 
-func (abe ABE) generateParams() {
+func (abe *ABE) generateParams() {
 	C.LIB_generateParams(abe.ptr)
 }
 
-func (abe ABE) genkey(att string, key string) {
+func (abe *ABE) genkey(att string, key string) {
 	latt := C.CString(att)
 	lkey := C.CString(key)
 
 	C.LIB_keygen(abe.ptr, latt, lkey)
 }
 
-func (abe ABE) encrypt(att string, pt string) string {
+func (abe *ABE) encrypt(att string, pt string) string {
 	latt := C.CString(att)
 	lpt := C.CString(pt)
 
 	return C.GoString(C.LIB_encrypt(abe.ptr, latt, lpt))
 }
 
-func (abe ABE) decrypt(key string, ct string) string {
+func (abe *ABE) decrypt(key string, ct string) string {
 
 	lkey := C.CString(key)
 	lct := C.CString(ct)
@@ -71,71 +75,42 @@ func (abe ABE) decrypt(key string, ct string) string {
 
 }
 
-func (abe ABE) exportMSK() string {
+func (abe *ABE) exportMSK() string {
 
 	return C.GoString(C.LIB_exportMSK(abe.ptr))
 }
 
-func (abe ABE) exportMPK() string {
+func (abe *ABE) exportMPK() string {
 
 	return C.GoString(C.LIB_exportMPK(abe.ptr))
 }
 
-func (abe ABE) importMSK(key string) {
+func (abe *ABE) importMSK(key string) {
 
 	lkey := C.CString(key)
 	C.LIB_importMSK(abe.ptr, lkey)
 }
 
-func (abe ABE) importMPK(key string) {
+func (abe *ABE) importMPK(key string) {
 
 	lkey := C.CString(key)
 	C.LIB_importMPK(abe.ptr, lkey)
 }
 
-// d, err := os.ReadFile("./sample.json")
-// if err != nil {
-// 	panic(err)
-// }
-// data := string(d)
+func (abe *ABE) importUserKey(index string, key string) {
 
-/*
-func main() {
-	abe := NewABE("CP-ABE")
+	lidx := C.CString(index)
+	lkey := C.CString(key)
+	C.LIB_importUserKey(abe.ptr, lidx, lkey)
 
-	abe.generateParams() // (MPK, MSK)
-
-	abe.genkey("student|math", "key_alice")
-	abe.genkey("student|CS", "key_bob")
-
-	data := "hello world"
-
-	ct := abe.encrypt("(student) and (math or EE)", data)
-
-	pt := abe.decrypt("key_alice", ct)
-
-	if pt == data {
-		fmt.Printf("Decrypt Successful pt = %v \n", pt)
-	} else {
-		fmt.Println("Fail to decrypt")
-	}
-}
-*/
-
-type attr struct {
-	PK  string `json:"pk"`
-	Att string `json:"att"`
 }
 
-type MKey struct {
-	MSK *ecdsa.PrivateKey `json:"msk"`
-	MPK ecdsa.PublicKey   `json:"mpk"`
+func (abe *ABE) exportUserKey(key string) string {
+
+	lkey := C.CString(key)
+
+	return C.GoString(C.LIB_exportUserKey(abe.ptr, lkey))
 }
-
-var gabe ABE
-var msk, mpk string
-
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func RandStringBytes(n int) string {
 	b := make([]byte, n)
@@ -148,42 +123,91 @@ func RandStringBytes(n int) string {
 func main() {
 
 	InitializeOpenABE()
+	abe := NewABE("CP-ABE")
+	abe.generateParams()
 
-	gabe = NewABE("CP-ABE")
-	gabe.generateParams()
+	msk = abe.exportMSK()
+	mpk = abe.exportMPK()
 
-	msk = gabe.exportMSK()
-	mpk = gabe.exportMPK()
-
-	fmt.Println("mpk:", mpk, "  msk:", msk)
+	ShutdownABE()
 
 	router := gin.Default()
 	router.POST("/register", register)
 
 	router.Run("localhost:8080")
-
 }
 
 func register(c *gin.Context) {
-	var user attr
-	if err := c.BindJSON(&user); err != nil {
+	var req Attr
+	if err := c.BindJSON(&req); err != nil {
 		return
 	}
-	fmt.Println("User:", user)
+	fmt.Println("request:", req)
 
-	key := RandStringBytes(8)
+	idx, key := registerHandler(req.Att)
 
-	// abe1 := NewABE("CP-ABE")
-	// abe1.importMPK(msk)
-	// // abe.importMSK(msk)
+	ct := abeEncrypt("aaa or bbb or xyz", "hello")
 
-	// abe1.genkey("abc", "key1")
+	pt := abeDecrypt(idx, key, ct)
 
-	fmt.Println("ABEKey: ", key)
+	fmt.Println("pt: ", pt)
 
-	// fmt.Println("User att: ", user.Att)
+	res := Res{idx, key}
 
-	gabe.genkey(user.Att, key)
+	c.IndentedJSON(http.StatusOK, res)
+}
 
-	c.IndentedJSON(http.StatusOK, key)
+func registerHandler(att string) (string, string) {
+
+	InitializeOpenABE()
+
+	abe := NewABE("CP-ABE")
+
+	fmt.Println("mpk:", mpk, "  msk:", msk)
+	abe.importMSK(msk)
+	abe.importMPK(mpk)
+
+	idx := RandStringBytes(8)
+	abe.genkey(att, idx)
+
+	ekey := abe.exportUserKey(idx)
+
+	fmt.Println("Genkey ok: ", idx)
+	fmt.Println("Ekey ok: ", ekey)
+
+	ShutdownABE()
+
+	return idx, ekey
+}
+
+func abeEncrypt(accesstree string, data string) string {
+
+	InitializeOpenABE()
+
+	abe := NewABE("CP-ABE")
+
+	abe.importMPK(mpk)
+
+	ct := abe.encrypt(accesstree, data)
+
+	ShutdownABE()
+
+	return ct
+}
+
+func abeDecrypt(idx string, ekey string, ct string) string {
+
+	InitializeOpenABE()
+
+	abe := NewABE("CP-ABE")
+
+	abe.importMPK(mpk)
+
+	abe.importUserKey(idx, ekey)
+
+	pt := abe.decrypt(idx, ct)
+
+	ShutdownABE()
+
+	return pt
 }

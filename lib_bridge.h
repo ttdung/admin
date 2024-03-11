@@ -12,7 +12,7 @@ char* LIB_encrypt(void* abe, char* att, char* pt);
 char* LIB_decrypt(void* abe, char* key, char* ct);
 int LIB_keygen(void* abe, char* att, char* key);
 
-char* LIB_importUserKey(void* abe,char* key);
+int LIB_importUserKey(void* abe, char* index, char* key);
 char* LIB_exportUserKey(void* abe,char* key);
 
 char* LIB_exportMPK(void* abe);
