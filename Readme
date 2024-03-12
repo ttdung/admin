@@ -1,0 +1,5 @@
+#run admin first
+go run ./cmd/admin.go
+
+#run du later
+go run ./DU/du.go
