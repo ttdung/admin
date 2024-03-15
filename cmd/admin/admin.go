@@ -1,6 +1,6 @@
 package main
 
-// #cgo LDFLAGS: -L../ -llibrary
+// #cgo LDFLAGS: -L../../ -llibrary
 // #include "/home/mmt/src/Admin/lib_bridge.h"
 import "C"
 
@@ -24,7 +24,6 @@ func main() {
 	common.InitializeOpenABE()
 	abe := common.NewABE("CP-ABE")
 	abe.GenerateParams()
-
 	msk = abe.ExportMSK()
 	mpk = abe.ExportMPK()
 
