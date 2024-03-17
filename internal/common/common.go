@@ -27,6 +27,18 @@ type Attr struct {
 	ATTR string `json:"att"`
 }
 
+type Policy struct {
+	UID                string `json:"uid"`
+	POLICY             string `json:"policy"`
+	ATTR               string `json:"attr"`
+	STORE_ENC_KEY_FILE string `json:"storeenckeyfile"`
+}
+
+type ResPolicyMatching struct {
+	RESULT bool   `json:"result"`
+	DATA   string `json:"data"`
+}
+
 type Res struct {
 	MPK     string `json:"mpk"`
 	ADMINPK string `json:"adminpk"`
@@ -288,4 +300,51 @@ func DownloadFromIPFS(ipfsHash, outputFilename string, projectID, projectSecret 
 	}
 
 	return nil
+}
+
+func StoreKey(uid string, gmpk string, gidx string, gkey string) {
+
+	mpkfilename := fmt.Sprintf("/tmp/demo0/%smpk.txt", uid)
+	err := os.WriteFile(mpkfilename, []byte(gmpk), 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	idxfilename := fmt.Sprintf("/tmp/demo0/%sidx.txt", uid)
+	err = os.WriteFile(idxfilename, []byte(gidx), 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	keyfilename := fmt.Sprintf("/tmp/demo0/%skey.txt", uid)
+	err = os.WriteFile(keyfilename, []byte(gkey), 0644)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func LoadKey(uid string) (string, string, string) {
+
+	mpkfilename := fmt.Sprintf("/tmp/demo0/%smpk.txt", uid)
+	mpk, err := os.ReadFile(mpkfilename)
+	if err != nil {
+		panic(err)
+	}
+	gmpk := string(mpk)
+
+	idxfilename := fmt.Sprintf("/tmp/demo0/%sidx.txt", uid)
+	idx, err := os.ReadFile(idxfilename)
+	if err != nil {
+		panic(err)
+	}
+	gidx := string(idx)
+
+	keyfilename := fmt.Sprintf("/tmp/demo0/%skey.txt", uid)
+	key, err := os.ReadFile(keyfilename)
+	if err != nil {
+		panic(err)
+	}
+	gkey := string(key)
+
+	return gmpk, gidx, gkey
 }

@@ -21,14 +21,14 @@ var gmpk, gidx, gkey string
 
 func main() {
 
-	fmt.Println("Register start...")
-
-	if len(os.Args) < 2 {
-		panic("Usage: register \"attridutes\"")
+	if len(os.Args) < 3 {
+		panic("Usage: register <userid> <attributes>")
 	}
 
-	attr := os.Args[1]
+	uid := os.Args[1]
+	attr := os.Args[2]
 
+	fmt.Println("User ", uid, " register start...")
 	fmt.Println(attr)
 
 	var err error
@@ -40,51 +40,11 @@ func main() {
 
 	pk := hex.EncodeToString(senderPublicKey[:])
 
-	fmt.Println("DU_PK keys:", pk)
+	gmpk, gidx, gkey = register(uid, pk, attr)
 
-	gmpk, gidx, gkey = register(pk, attr)
-
-	// storeKey()
-	// loadKey()
+	common.StoreKey(uid, gmpk, gidx, gkey)
+	// gmpk, gidx, gkey = common.LoadKey(uid)
 	// testABE("xyz", "Hello!")
-}
-
-func storeKey() {
-
-	err := os.WriteFile("/tmp/demo0/mpk.txt", []byte(gmpk), 0644)
-	if err != nil {
-		panic(err)
-	}
-
-	err = os.WriteFile("/tmp/demo0/idx.txt", []byte(gidx), 0644)
-	if err != nil {
-		panic(err)
-	}
-
-	err = os.WriteFile("/tmp/demo0/key.txt", []byte(gkey), 0644)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func loadKey() {
-	mpk, err := os.ReadFile("/tmp/demo0/mpk.txt")
-	if err != nil {
-		panic(err)
-	}
-	gmpk = string(mpk)
-
-	idx, err := os.ReadFile("/tmp/demo0/idx.txt")
-	if err != nil {
-		panic(err)
-	}
-	gidx = string(idx)
-
-	key, err := os.ReadFile("/tmp/demo0/key.txt")
-	if err != nil {
-		panic(err)
-	}
-	gkey = string(key)
 }
 
 func testABE(attr string, data string) {
@@ -127,7 +87,7 @@ func testABE(attr string, data string) {
 // MPK
 // IDX
 // ABEKey
-func register(pk string, attr string) (string, string, string) {
+func register(uid string, pk string, attr string) (string, string, string) {
 
 	// Create a resty client
 	client := restyv2.New()
@@ -141,7 +101,7 @@ func register(pk string, attr string) (string, string, string) {
 			PK:   pk,
 			ATTR: attr,
 		}).
-		Post("http://localhost:8080/register")
+		Post("http://localhost:8081/register")
 
 	if err != nil {
 		panic(err)
@@ -179,7 +139,9 @@ func register(pk string, attr string) (string, string, string) {
 		panic("decryption error")
 	}
 
-	fmt.Println("E-key: ", string(decrypted))
+	fmt.Println("MPK: ", result.MPK)
+	fmt.Println("Index: ", result.IDX)
+	fmt.Println("ABE-key: ", string(decrypted))
 
 	return result.MPK, result.IDX, string(decrypted)
 }

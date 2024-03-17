@@ -18,12 +18,13 @@ func main() {
 	var err error
 
 	args := os.Args
-	if len(args) < 3 {
-		panic("Usage: ./du <filename> <accesstree>")
+	if len(args) < 4 {
+		panic("Usage: ./du <userid> <filename> <accesstree>")
 	}
 
-	filename := args[1]
-	accesstree := args[2]
+	uid := args[1]
+	filename := args[2]
+	accesstree := args[3]
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -40,7 +41,7 @@ func main() {
 	}
 
 	// use ABEKey to encrypt secretkey
-	loadKey()
+	gmpk, gidx, gkey = common.LoadKey(uid)
 	encryptedKey := common.AbeEncrypt(gmpk, accesstree, common.SecretKey)
 
 	encryptedKeyFilename := "/tmp/demo0/ecryptedKey.txt"
@@ -72,24 +73,4 @@ func main() {
 	// 	fmt.Printf("Failed to download from IPFS: %v \n", err)
 	// }
 	// fmt.Println("Downloaded file successfully:", downloadedFilename)
-}
-
-func loadKey() {
-	mpk, err := os.ReadFile("/tmp/demo0/mpk.txt")
-	if err != nil {
-		panic(err)
-	}
-	gmpk = string(mpk)
-
-	idx, err := os.ReadFile("/tmp/demo0/idx.txt")
-	if err != nil {
-		panic(err)
-	}
-	gidx = string(idx)
-
-	key, err := os.ReadFile("/tmp/demo0/key.txt")
-	if err != nil {
-		panic(err)
-	}
-	gkey = string(key)
 }

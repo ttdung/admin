@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	crypto_rand "crypto/rand"
 	"encoding/hex"
@@ -15,6 +16,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ttdung/admin/internal/common"
 	"golang.org/x/crypto/nacl/box"
+
+	policytree "github.com/ttdung/MatchAttributeWithPolicyTree/common"
 )
 
 var msk, mpk string
@@ -32,8 +35,58 @@ func main() {
 	router := gin.Default()
 	router.POST("/register", register)
 	router.POST("/testabe", testABE_Encrypt)
+	router.POST("/matchpolicy", matchPolicy)
 
-	router.Run("localhost:8080")
+	router.Run("localhost:8081")
+}
+
+func matchPolicy(c *gin.Context) {
+
+	var req common.Policy
+	if err := c.BindJSON(&req); err != nil {
+		return
+	}
+
+	fmt.Println("request:", req)
+	// fmt.Println("request Attr:", req.ATTR)
+
+	var result common.ResPolicyMatching
+
+	rs := policytree.EvaluatePolicyTree(req.ATTR, req.POLICY)
+
+	fmt.Println("Matching:", rs)
+
+	if rs == true {
+		// load encrypted AES key file > decypt to get AES key > use AES key decrypt encrypted data file
+		encAESKey, err := os.ReadFile(req.STORE_ENC_KEY_FILE)
+		if err != nil {
+			panic(err)
+		}
+
+		mpk, idx, ekey := common.LoadKey(req.UID)
+		fmt.Println("Uid:", req.UID)
+		fmt.Println("mpk:", mpk)
+		fmt.Println("idx:", idx)
+		fmt.Println("ABE key:", ekey)
+
+		AESKey := common.AbeDecrypt(mpk, idx, ekey, string(encAESKey))
+
+		fmt.Println("AES key:", AESKey)
+
+		encData, err := os.ReadFile("/tmp/demo0/encrypted.txt")
+		if err != nil {
+			panic(err)
+		}
+		data := common.AESDecrypt(string(encData), AESKey)
+
+		result = common.ResPolicyMatching{RESULT: rs,
+			DATA: data[0:20]}
+
+	} else {
+		result = common.ResPolicyMatching{RESULT: rs, DATA: "Not matching READ access policy"}
+	}
+
+	c.IndentedJSON(http.StatusOK, result)
 }
 
 func register(c *gin.Context) {
