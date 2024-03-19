@@ -5,14 +5,20 @@ package common
 import "C"
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	rand1 "crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand/v2"
+	"mime/multipart"
+	"net/http"
 	"os"
+	"path/filepath"
 	"unsafe"
 
 	"github.com/valyala/fasthttp"
@@ -35,8 +41,8 @@ type Policy struct {
 }
 
 type ResPolicyMatching struct {
-	RESULT bool   `json:"result"`
-	DATA   string `json:"data"`
+	MATCHING bool   `json:"matching"`
+	DATA     string `json:"data"`
 }
 
 type Res struct {
@@ -240,7 +246,7 @@ func basicAuthHeader(username, password string) string {
 }
 
 // UploadToIPFS uploads a file to IPFS via the Infura API.
-func UploadToIPFS(filename string, projectID, projectSecret string) (string, error) {
+func UploadToIPFSInfura(filename string, projectID, projectSecret string) (string, error) {
 	url := "https://ipfs.infura.io:5001/api/v0/add"
 
 	content, err := os.ReadFile(filename)
@@ -271,7 +277,7 @@ func UploadToIPFS(filename string, projectID, projectSecret string) (string, err
 }
 
 // DownloadFromIPFS downloads a file from IPFS via the Infura API given the file's hash.
-func DownloadFromIPFS(ipfsHash, outputFilename string, projectID, projectSecret string) error {
+func DownloadFromIPFSInfura(ipfsHash, outputFilename string, projectID, projectSecret string) error {
 	url := fmt.Sprintf("https://ipfs.infura.io:5001/api/v0/cat?arg=%s", ipfsHash)
 
 	// Prepare the request
@@ -347,4 +353,92 @@ func LoadKey(uid string) (string, string, string) {
 	gkey := string(key)
 
 	return gmpk, gidx, gkey
+}
+
+func byteToMap(data []byte) (map[string]string, error) {
+	var result map[string]string
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// UploadToIPFS uploads a file to IPFS using a local node.
+func UploadToIPFS(filename string) (map[string]string, error) {
+	url := "http://localhost:5001/api/v0/add"
+
+	// Prepare the file for upload
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", filepath.Base(file.Name()))
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return nil, err
+	}
+	writer.Close()
+
+	// Make the request
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", writer.FormDataContentType())
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	responseData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return byteToMap(responseData)
+}
+
+// DownloadFromIPFS downloads a file from IPFS using a local node with a POST request.
+func DownloadFromIPFS(ipfsHash, outputFilename string) error {
+	url := fmt.Sprintf("http://127.0.0.1:5001/api/v0/cat?arg=%v", ipfsHash)
+	fmt.Println(url)
+
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		fmt.Println("Error creating HTTP request:", err)
+		return err
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending HTTP request:", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return err
+	}
+
+	fmt.Println("Response:", string(body))
+	err = ioutil.WriteFile(outputFilename, body, 0644)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return err
+	}
+
+	return nil
 }

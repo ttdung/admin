@@ -19,31 +19,32 @@ func main() {
 
 	args := os.Args
 	if len(args) < 4 {
-		panic("Usage: ./du <userid> <filename> <accesstree>")
+		panic("Usage: ./do <userid> <accesstree> <data filename>")
 	}
 
 	uid := args[1]
-	filename := args[2]
-	accesstree := args[3]
+	accesstree := args[2]
+	datafilename := args[3]
+	enckeyfilename := "/tmp/demo0/doenckey.dat"
 
 	// Load data file then encrypt it using AES key
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(datafilename)
 	if err != nil {
 		panic(err)
 	}
 
 	encryptedFileData := common.AESEncrypt(string(data), common.SecretKey)
-	encryptedFilename := "/tmp/demo0/encrypted.txt"
-	err = os.WriteFile(encryptedFilename, []byte(encryptedFileData), 0644)
+	// encryptedDataFilename := "/tmp/demo0/encrypted.txt"
+	encryptedDataFilename := fmt.Sprintf("/tmp/demo0/%sencrypted.txt", uid)
+	err = os.WriteFile(encryptedDataFilename, []byte(encryptedFileData), 0644)
 	if err != nil {
 		panic(err)
 	}
 
-	// use ABEKey to encrypt AES secretkey
+	// use ABEKey to encrypt AES_key
 	gmpk, gidx, gkey = common.LoadKey(uid)
 	encryptedKey := common.AbeEncrypt(gmpk, accesstree, common.SecretKey)
-	encryptedKeyFilename := "/tmp/demo0/encryptedKey.txt"
-	err = os.WriteFile(encryptedKeyFilename, []byte(encryptedKey), 0644)
+	err = os.WriteFile(enckeyfilename, []byte(encryptedKey), 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -59,21 +60,26 @@ func main() {
 	// fmt.Println("Secret key: ", pt)
 
 	// push to IPFS
-	projectID := "InfuraProjectID"
-	projectSecret := "InfuraProjectSecret"
-	ipfsResponseFileData, err := common.UploadToIPFS(encryptedFilename, projectID, projectSecret)
-	if err != nil {
-		fmt.Printf("Failed to upload to IPFS: %v \n", err)
-	}
-	fmt.Println("Encrypted File uploaded to IPFS:", ipfsResponseFileData)
+	// ipfsResponseFileData, err := common.UploadToIPFS(encryptedDataFilename)
+	// if err != nil {
+	// 	fmt.Printf("Failed to upload to IPFS: %v \n", err)
+	// }
+	// fmt.Println("Encrypted File uploaded to IPFS:", ipfsResponseFileData)
 
-	ipfsResponseKey, err := common.UploadToIPFS(encryptedKeyFilename, projectID, projectSecret)
+	ipfsResponseKey, err := common.UploadToIPFS(enckeyfilename)
 	if err != nil {
 		fmt.Printf("Failed to upload to IPFS: %v \n", err)
 	}
 	fmt.Println("Encrypted Key uploaded to IPFS:", ipfsResponseKey)
 
 	// Download the file from IPFS
+	// ipfsHash := ipfsResponseKey["Hash"] // Replace this with the actual IPFS hash from the upload response
+	// downloadedFilename := "/tmp/demo0/downloaded.dat"
+	// if err := common.DownloadFromIPFS(ipfsHash, downloadedFilename); err != nil {
+	// 	fmt.Printf("Failed to download from IPFS: %v", err)
+	// }
+	// fmt.Println("Downloaded file successfully:", downloadedFilename)
+
 	// ipfsHash := "ipfsHashHere" // Replace this with the actual IPFS hash from the upload response
 	// downloadedFilename := "downloaded.dat"
 	// if err := common.DownloadFromIPFS(ipfsHash, downloadedFilename, projectID, projectSecret); err != nil {

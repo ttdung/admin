@@ -58,32 +58,47 @@ func matchPolicy(c *gin.Context) {
 
 	if rs == true {
 		// load encrypted AES key file > decypt to get AES key > use AES key decrypt encrypted data file
-		encAESKey, err := os.ReadFile(req.STORE_ENC_KEY_FILE)
+		// encAESKey, err := os.ReadFile(req.STORE_ENC_KEY_FILE)
+		// if err != nil {
+		// 	panic(err)
+		// }
+		// Download the file from IPFS
+		ipfsHash := req.STORE_ENC_KEY_FILE // Replace this with the actual IPFS hash from the upload response
+		downloadedFilename := "/tmp/demo0/downloaded.dat"
+		if err := common.DownloadFromIPFS(ipfsHash, downloadedFilename); err != nil {
+			fmt.Printf("Failed to download from IPFS: %v", err)
+		}
+		// fmt.Println("Downloaded file successfully:", downloadedFilename)
+
+		encAESKey, err := os.ReadFile(downloadedFilename)
 		if err != nil {
 			panic(err)
 		}
 
 		mpk, idx, ekey := common.LoadKey(req.UID)
-		fmt.Println("Uid:", req.UID)
-		fmt.Println("mpk:", mpk)
-		fmt.Println("idx:", idx)
-		fmt.Println("ABE key:", ekey)
+		// fmt.Println("Uid:", req.UID)
+		// fmt.Println("mpk:", mpk)
+		// fmt.Println("idx:", idx)
+		// fmt.Println("ABE key:", ekey)
 
 		AESKey := common.AbeDecrypt(mpk, idx, ekey, string(encAESKey))
 
 		fmt.Println("AES key:", AESKey)
 
-		encData, err := os.ReadFile("/tmp/demo0/encrypted.txt")
+		encDataFileName := "/tmp/demo0/doencrypted.txt"
+		encData, err := os.ReadFile(encDataFileName)
 		if err != nil {
 			panic(err)
 		}
 		data := common.AESDecrypt(string(encData), AESKey)
 
-		result = common.ResPolicyMatching{RESULT: rs,
-			DATA: data[0:20]}
+		l := min(len(data), 250)
+
+		result = common.ResPolicyMatching{MATCHING: rs,
+			DATA: data[0:l]}
 
 	} else {
-		result = common.ResPolicyMatching{RESULT: rs, DATA: "Not matching READ access policy"}
+		result = common.ResPolicyMatching{MATCHING: rs, DATA: ""}
 	}
 
 	c.IndentedJSON(http.StatusOK, result)
