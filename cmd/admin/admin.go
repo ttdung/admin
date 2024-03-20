@@ -111,7 +111,10 @@ func register(c *gin.Context) {
 	}
 	fmt.Println("request:", req)
 
-	idx, abekey := registerHandler(req.ATTR)
+	idx := req.UID
+	fmt.Println("request UID:", req.UID)
+
+	abekey := registerHandler(req.ATTR, idx)
 
 	pubKeyUser, err := hex.DecodeString(req.PK)
 	if err != nil {
@@ -163,7 +166,7 @@ func testABE_Encrypt(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, common.EncryptedMsg{EMSG: ct})
 }
 
-func registerHandler(att string) (string, string) {
+func registerHandler(att string, idx string) string {
 
 	common.InitializeOpenABE()
 
@@ -172,15 +175,14 @@ func registerHandler(att string) (string, string) {
 	abe.ImportMSK(msk)
 	abe.ImportMPK(mpk)
 
-	idx := common.RandStringBytes(8)
 	abe.Genkey(att, idx)
 
 	ekey := abe.ExportUserKey(idx)
 
-	fmt.Println("Genkey ok: ", idx)
-	fmt.Println("Ekey ok: ", ekey)
+	// fmt.Println("Genkey idx: ", idx)
+	// fmt.Println("Ekey: ", ekey)
 
 	common.ShutdownABE()
 
-	return idx, ekey
+	return ekey
 }

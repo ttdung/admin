@@ -52,15 +52,14 @@ func main() {
 	}
 
 	// push to IPFS
-	projectID := "InfuraProjectID"
-	projectSecret := "InfuraProjectSecret"
-	ipfsResponseFileData, err := common.UploadToIPFS(encryptedFilename, projectID, projectSecret)
+
+	ipfsResponseFileData, err := common.UploadToIPFS(encryptedFilename)
 	if err != nil {
 		fmt.Printf("Failed to upload to IPFS: %v \n", err)
 	}
 	fmt.Println("Encrypted File uploaded to IPFS:", ipfsResponseFileData)
 
-	ipfsResponseKey, err := common.UploadToIPFS(encryptedKeyFilename, projectID, projectSecret)
+	ipfsResponseKey, err := common.UploadToIPFS(encryptedKeyFilename)
 	if err != nil {
 		fmt.Printf("Failed to upload to IPFS: %v \n", err)
 	}

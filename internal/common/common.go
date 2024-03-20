@@ -29,6 +29,7 @@ type ABE struct {
 }
 
 type Attr struct {
+	UID  string `json:"uid"`
 	PK   string `json:"pk"`
 	ATTR string `json:"att"`
 }
