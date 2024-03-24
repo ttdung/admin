@@ -13,13 +13,13 @@ var gmpk, gidx, gkey string
 
 func main() {
 
-	fmt.Println("Do start...")
+	fmt.Println("Encypt & push to IPFS start...")
 
 	var err error
 
 	args := os.Args
 	if len(args) < 4 {
-		panic("Usage: ./do <userid> <accesstree> <data filename>")
+		panic("Usage: ./enc <userid> <accesstree> <data filename>")
 	}
 
 	uid := args[1]
@@ -49,6 +49,12 @@ func main() {
 		panic(err)
 	}
 
+	ipfsResponseKey, err := common.UploadToIPFS(enckeyfilename)
+	if err != nil {
+		fmt.Printf("Failed to upload to IPFS: %v \n", err)
+	}
+	fmt.Println("Encrypted Key uploaded to IPFS:", ipfsResponseKey)
+
 	// test decrypt AES key
 	// gmpk1, gidx1, gkey1 := common.LoadKey("du")
 	// encAESKey, err := os.ReadFile("/tmp/demo0/encryptedKey.txt")
@@ -65,12 +71,6 @@ func main() {
 	// 	fmt.Printf("Failed to upload to IPFS: %v \n", err)
 	// }
 	// fmt.Println("Encrypted File uploaded to IPFS:", ipfsResponseFileData)
-
-	ipfsResponseKey, err := common.UploadToIPFS(enckeyfilename)
-	if err != nil {
-		fmt.Printf("Failed to upload to IPFS: %v \n", err)
-	}
-	fmt.Println("Encrypted Key uploaded to IPFS:", ipfsResponseKey)
 
 	// Download the file from IPFS
 	// ipfsHash := ipfsResponseKey["Hash"] // Replace this with the actual IPFS hash from the upload response

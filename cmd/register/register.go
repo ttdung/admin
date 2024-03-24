@@ -94,7 +94,6 @@ func register(uid string, pk string, attr string) (string, string, string) {
 
 	// POST JSON string
 	// No need to set content type, if you have client level setting
-	fmt.Println("Register Uid :", uid)
 	resp, err := client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(common.Attr{
