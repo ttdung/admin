@@ -41,6 +41,35 @@ type Policy struct {
 	STORE_ENC_KEY_FILE string `json:"storeenckeyfile"`
 }
 
+type Store struct {
+	UID               string `json:"uid"`
+	ENC_KEY_FILENAME  string `json:"enckeyfilename"`
+	ENC_DATA_FILENAME string `json:"encdatafilename"`
+}
+
+type StoreRes struct {
+	FILEID string `json:"fileid"`
+}
+
+type ReadReq struct {
+	TXID   string `json:"txid"`
+	FILEID string `json:"fileid"`
+}
+
+type ReadReqRes struct {
+	RESULT bool `json:"result"`
+}
+
+type QueryData struct {
+	TXID   string `json:"txid"`
+	FILEID string `json:"fileid"`
+}
+
+type QueryDataRes struct {
+	ENC_KEY_FILENAME  string `json:"enckeyfilename"`
+	ENC_DATA_FILENAME string `json:"encdatafilename"`
+}
+
 type ResPolicyMatching struct {
 	MATCHING bool   `json:"matching"`
 	DATA     string `json:"data"`

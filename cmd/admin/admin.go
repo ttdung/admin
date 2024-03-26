@@ -55,8 +55,17 @@ func matchPolicy(c *gin.Context) {
 	rs := policytree.EvaluatePolicyTree(req.ATTR, req.POLICY)
 
 	fmt.Println("Matching:", rs)
+	result = common.ResPolicyMatching{MATCHING: rs, DATA: ""}
+	// result = extractData(req.UID, rs, req)
 
-	if rs == true {
+	c.IndentedJSON(http.StatusOK, result)
+}
+
+func extractData(uid string, rs bool, req common.Policy) common.ResPolicyMatching {
+
+	var result = common.ResPolicyMatching{MATCHING: rs, DATA: ""}
+
+	if rs {
 		// load encrypted AES key file > decypt to get AES key > use AES key decrypt encrypted data file
 		// encAESKey, err := os.ReadFile(req.STORE_ENC_KEY_FILE)
 		// if err != nil {
@@ -101,7 +110,7 @@ func matchPolicy(c *gin.Context) {
 		result = common.ResPolicyMatching{MATCHING: rs, DATA: ""}
 	}
 
-	c.IndentedJSON(http.StatusOK, result)
+	return result
 }
 
 func register(c *gin.Context) {
