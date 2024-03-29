@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/big"
 	"math/rand/v2"
 	"mime/multipart"
 	"net/http"
@@ -52,8 +53,9 @@ type StoreRes struct {
 }
 
 type ReadReq struct {
-	TXID   string `json:"txid"`
-	FILEID string `json:"fileid"`
+	TXID   string  `json:"txid"`
+	FILEID string  `json:"fileid"`
+	VALUE  big.Int `json:"value"`
 }
 
 type ReadReqRes struct {
@@ -336,6 +338,40 @@ func DownloadFromIPFSInfura(ipfsHash, outputFilename string, projectID, projectS
 	}
 
 	return nil
+}
+
+func StoreMKey(uid string, gmpk string, gmsk string) {
+
+	mpkfilename := fmt.Sprintf("/tmp/demo0/%smpk.key", uid)
+	err := os.WriteFile(mpkfilename, []byte(gmpk), 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	keyfilename := fmt.Sprintf("/tmp/demo0/%smsk.key", uid)
+	err = os.WriteFile(keyfilename, []byte(gmsk), 0644)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func LoadMKey(uid string) (bool, string, string) {
+
+	mpkfilename := fmt.Sprintf("/tmp/demo0/%smpk.key", uid)
+	mpk, err := os.ReadFile(mpkfilename)
+	if err != nil {
+		return false, "", ""
+	}
+	gmpk := string(mpk)
+
+	keyfilename := fmt.Sprintf("/tmp/demo0/%smsk.key", uid)
+	key, err := os.ReadFile(keyfilename)
+	if err != nil {
+		return false, "", ""
+	}
+	gmsk := string(key)
+
+	return true, gmpk, gmsk
 }
 
 func StoreKey(uid string, gmpk string, gidx string, gkey string) {

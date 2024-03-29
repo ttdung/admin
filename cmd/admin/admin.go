@@ -24,13 +24,20 @@ var msk, mpk string
 
 func main() {
 
-	common.InitializeOpenABE()
-	abe := common.NewABE("CP-ABE")
-	abe.GenerateParams()
-	msk = abe.ExportMSK()
-	mpk = abe.ExportMPK()
+	var rs bool
+	rs, mpk, msk = common.LoadMKey("adminX")
 
-	common.ShutdownABE()
+	if !rs {
+		fmt.Println("Create new MSK & MPK...")
+		common.InitializeOpenABE()
+		abe := common.NewABE("CP-ABE")
+		abe.GenerateParams()
+		msk = abe.ExportMSK()
+		mpk = abe.ExportMPK()
+		common.ShutdownABE()
+
+		common.StoreMKey("adminX", mpk, msk)
+	}
 
 	router := gin.Default()
 	router.POST("/register", register)

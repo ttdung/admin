@@ -64,6 +64,7 @@ func txreadreq(c *gin.Context) {
 
 	fmt.Println("request txid:", req.TXID)
 	fmt.Println("request fileid:", req.FILEID)
+	fmt.Println("value: ", req.VALUE)
 
 	read_req[req.TXID] = req.FILEID
 }
