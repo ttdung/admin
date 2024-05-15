@@ -17,7 +17,7 @@ import (
 	"github.com/ttdung/admin/internal/common"
 	"golang.org/x/crypto/nacl/box"
 
-	policytree "github.com/ttdung/MatchAttributeWithPolicyTree/common"
+	policytree "github.com/ttdung/matchingAccessTree/common"
 )
 
 var msk, mpk string
@@ -108,7 +108,7 @@ func extractData(uid string, rs bool, req common.Policy) common.ResPolicyMatchin
 		}
 		data := common.AESDecrypt(string(encData), AESKey)
 
-		l := min(len(data), 250)
+		l := min(len(data), 1000)
 
 		result = common.ResPolicyMatching{MATCHING: rs,
 			DATA: data[0:l]}

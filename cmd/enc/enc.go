@@ -16,7 +16,7 @@ var gmpk, gidx, gkey string
 
 func main() {
 
-	fmt.Println("Encypt & push to IPFS start...")
+	fmt.Println("Encypt ...")
 
 	var err error
 

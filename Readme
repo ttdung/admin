@@ -1,5 +1,26 @@
-#run admin first
-go run ./cmd/admin.go
+#to compile
+#it might need to export the OpenABE lib path by "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH://<your install dir>/Admin/lib/" 
+# before compiling
+make all
 
-#run du later
-go run ./DU/du.go
+#start admin & store program first
+# admin: create MPK/MSK, and allow users to register to receive their own ABE keys
+# store: store the encrypted docs, store the request read tx, and handle the query docs from users. 
+#note: create folder /tmp/demo0 before start admin, since all demo data files stored here
+
+./admin 
+./store
+
+# to register a user
+# Usage: register <userid> <attributes>
+./register stu1 "student|math"
+
+#to encrypt a document, 
+# Usage: ./enc <userid> <accesstree> <data_filename>
+# example 
+./enc do1 "student and (math or ee)" /tmp/demo0/data0.dat
+
+# to query a document
+# Usage: ./query <userid> <txid>
+# txid: user have to pay fee to create read request tx on blockchain, and store the successful txid.
+./ query user1 <txid>

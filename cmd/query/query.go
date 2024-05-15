@@ -55,7 +55,7 @@ func decrypt(uid string, filename common.QueryDataRes) string {
 	}
 	data := common.AESDecrypt(string(encData), AESKey)
 
-	l := min(len(data), 300)
+	l := min(len(data), 1000)
 
 	return data[0:l]
 }
