@@ -4,7 +4,7 @@ CXXFLAGS = $(CXX11FLAGS) $(OS_CXXFLAGS) -pthread -Wall -g -O2 -DSSL_LIB_INIT -I.
 LDFLAGS = -L/home/mmt/src/Admin/lib -L/usr/local/lib $(LOC_LIB)
 LIBS = -lcrypto -lrelic -lrelic_ec -lopenabe
 
-all: query enc admin register store test
+all: query enc admin register store bbs test
 
 liblibrary.so: lib_bridge.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -fPIC -shared -o liblibrary.so lib_bridge.cpp $(LIBS)
@@ -27,5 +27,9 @@ register: liblibrary.so cmd/register/register.go
 store: liblibrary.so cmd/store/store.go
 	go build -o store cmd/store/store.go
 
+bbs: liblibrary.so cmd/bbs_plus/bbs.go
+	go build -o bbs cmd/bbs_plus/bbs.go
+
+
 clean:
-	rm -rf admin query enc register store test
+	rm -rf admin query enc register store test bbs
